@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use std::fmt;
 
 use crate::value::Value;
 use serde::de;
+use serde::serde_if_integer128;
 
 impl<'de> de::Deserialize<'de> for Value {
     #[inline]
@@ -55,7 +57,7 @@ impl<'de> de::Deserialize<'de> for Value {
             where
                 E: de::Error,
             {
-                Ok(Value::Integer(v.into()))
+                Ok(Value::Integer(v.try_into().unwrap()))
             }
 
             #[inline]
@@ -66,12 +68,14 @@ impl<'de> de::Deserialize<'de> for Value {
                 Ok(Value::Integer(v.into()))
             }
 
-            #[inline]
-            fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Integer(v))
+            serde_if_integer128! {
+                #[inline]
+                fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
+                where
+                    E: de::Error,
+                {
+                    Ok(Value::Integer(v.try_into().unwrap()))
+                }
             }
 
             #[inline]

@@ -7,8 +7,10 @@
 // except according to those terms.
 
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 
 use crate::error::Error;
+use serde::serde_if_integer128;
 use serde::{self, Serialize};
 
 use crate::tags::Tagged;
@@ -21,7 +23,7 @@ impl serde::Serialize for Value {
         S: serde::Serializer,
     {
         match *self {
-            Value::Integer(v) => serializer.serialize_i128(v),
+            Value::Integer(v) => serializer.serialize_i64(v),
             Value::Bytes(ref v) => serializer.serialize_bytes(&v),
             Value::Text(ref v) => serializer.serialize_str(&v),
             Value::Array(ref v) => v.serialize(serializer),
@@ -71,11 +73,13 @@ impl serde::Serializer for Serializer {
 
     #[inline]
     fn serialize_i64(self, value: i64) -> Result<Value, Error> {
-        self.serialize_i128(i128::from(value))
+        Ok(Value::Integer(value))
     }
 
-    fn serialize_i128(self, value: i128) -> Result<Value, Error> {
-        Ok(Value::Integer(value))
+    serde_if_integer128! {
+        fn serialize_i128(self, value: i128) -> Result<Value, Error> {
+            Ok(Value::Integer(value.try_into().unwrap()))
+        }
     }
 
     #[inline]
@@ -95,7 +99,7 @@ impl serde::Serializer for Serializer {
 
     #[inline]
     fn serialize_u64(self, value: u64) -> Result<Value, Error> {
-        Ok(Value::Integer(value.into()))
+        Ok(Value::Integer(value.try_into().unwrap()))
     }
 
     #[inline]

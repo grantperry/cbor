@@ -31,7 +31,7 @@ pub enum Value {
     /// While the smallest value is -2^64.
     /// Values outside this range can't be serialized
     /// and will cause an error.
-    Integer(i128),
+    Integer(i64),
     /// Represents a floating point value.
     Float(f64),
     /// Represents a byte string.
@@ -121,7 +121,7 @@ impl_from!(Value::Integer, i64);
 impl_from!(Value::Integer, u8);
 impl_from!(Value::Integer, u16);
 impl_from!(Value::Integer, u32);
-impl_from!(Value::Integer, u64);
+// impl_from!(Value::Integer, u64);
 // u128 omitted because not all numbers fit in CBOR serialization
 impl_from!(Value::Float, f32);
 impl_from!(Value::Float, f64);

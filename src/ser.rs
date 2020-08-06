@@ -10,6 +10,7 @@ pub use crate::write::{SliceWrite, Write};
 use crate::error::{Error, Result};
 use half::f16;
 use serde::ser::{self, Serialize};
+use serde::serde_if_integer128;
 #[cfg(feature = "std")]
 use std::io;
 
@@ -264,18 +265,20 @@ where
         }
     }
 
-    #[inline]
-    fn serialize_i128(self, value: i128) -> Result<()> {
-        if value < 0 {
-            if -(value + 1) > i128::from(u64::max_value()) {
-                return Err(Error::message("The number can't be stored in CBOR"));
+    serde_if_integer128! {
+        #[inline]
+        fn serialize_i128(self, value: i128) -> Result<()> {
+            if value < 0 {
+                if -(value + 1) > i128::from(u64::max_value()) {
+                    return Err(Error::message("The number can't be stored in CBOR"));
+                }
+                self.write_u64(1, -(value + 1) as u64)
+            } else {
+                if value > i128::from(u64::max_value()) {
+                    return Err(Error::message("The number can't be stored in CBOR"));
+                }
+                self.write_u64(0, value as u64)
             }
-            self.write_u64(1, -(value + 1) as u64)
-        } else {
-            if value > i128::from(u64::max_value()) {
-                return Err(Error::message("The number can't be stored in CBOR"));
-            }
-            self.write_u64(0, value as u64)
         }
     }
 
@@ -299,12 +302,14 @@ where
         self.write_u64(0, value)
     }
 
-    #[inline]
-    fn serialize_u128(self, value: u128) -> Result<()> {
-        if value > u128::from(u64::max_value()) {
-            return Err(Error::message("The number can't be stored in CBOR"));
+    serde_if_integer128! {
+        #[inline]
+        fn serialize_u128(self, value: u128) -> Result<()> {
+            if value > u128::from(u64::max_value()) {
+                return Err(Error::message("The number can't be stored in CBOR"));
+            }
+            self.write_u64(0, value as u64)
         }
-        self.write_u64(0, value as u64)
     }
 
     #[inline]
